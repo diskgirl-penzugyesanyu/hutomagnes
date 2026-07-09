@@ -1,11 +1,15 @@
 """
 Hűtőmágnes -- OurGroceries proxy
 
-Kicsi FastAPI szolgáltatás, ami a mar bevalt `ourgroceries` Python csomagot
-hasznalja arra, hogy a Hűtőmágnes appbol osszesitett bevasarlolista-tetelek
-bekeruljenek egy dedikalt OurGroceries listaba. A hitelesito adatok (OG_USERNAME,
-OG_PASSWORD) es a megosztott API-kulcs (API_TOKEN) kizarolag kornyezeti
-valtozokent elnek a Render szolgaltatason -- soha nem kerulnek az APK-ba.
+Kicsi FastAPI szolgáltatás. A bejelentkezéshez (munkamenet-cookie + csapat-azonosító
+megszerzéséhez) a bevált `ourgroceries` Python csomagot használja, a tényleges
+lista-lekérdezést/-írást viszont közvetlen HTTP-hívással végzi -- ez utóbbi a
+könyvtár saját get_my_lists()/add_item_to_list() metódusainál megbízhatóbbnak
+bizonyult ezen a hosztingon (lásd git history a /debug diagnosztikáért).
+
+A hitelesito adatok (OG_USERNAME, OG_PASSWORD) es a megosztott API-kulcs (API_TOKEN)
+kizarolag kornyezeti valtozokent elnek a Render szolgaltatason -- soha nem
+kerulnek az APK-ba.
 """
 
 import os
@@ -20,6 +24,8 @@ OG_USERNAME = os.environ.get("OG_USERNAME")
 OG_PASSWORD = os.environ.get("OG_PASSWORD")
 API_TOKEN = os.environ.get("API_TOKEN")
 OG_LIST_NAME = os.environ.get("OG_LIST_NAME", "Havi menü")
+
+YOUR_LISTS_URL = "https://www.ourgroceries.com/your-lists/"
 
 app = FastAPI()
 
@@ -45,20 +51,37 @@ async def get_client():
     return _og_client
 
 
+async def og_post(command, other_payload=None):
+    """Nyers hívás a /your-lists/ végpontra, a könyvtár session_key/team_id-jével."""
+    og = await get_client()
+    cookies = {"ourgroceries-auth": og._session_key}
+    payload = {"command": command}
+    if og._team_id:
+        payload["teamId"] = og._team_id
+    if other_payload:
+        payload.update(other_payload)
+
+    async with aiohttp.ClientSession(cookies=cookies) as session:
+        async with session.post(YOUR_LISTS_URL, json=payload) as resp:
+            if resp.status != 200:
+                text = await resp.text()
+                raise RuntimeError(f"OurGroceries HTTP {resp.status}: {text[:300]}")
+            return await resp.json(content_type=None)
+
+
 async def get_target_list_id():
     global _list_id_cache
     if _list_id_cache:
         return _list_id_cache
 
-    og = await get_client()
-    lists = await og.get_my_lists()
+    lists = await og_post("getOverview")
     for lst in lists.get("shoppingLists", []):
         if lst.get("name") == OG_LIST_NAME:
             _list_id_cache = lst["id"]
             return _list_id_cache
 
-    await og.create_list(OG_LIST_NAME)
-    lists = await og.get_my_lists()
+    await og_post("createList", {"name": OG_LIST_NAME, "listType": "SHOPPING"})
+    lists = await og_post("getOverview")
     for lst in lists.get("shoppingLists", []):
         if lst.get("name") == OG_LIST_NAME:
             _list_id_cache = lst["id"]
@@ -79,28 +102,6 @@ async def health():
     return {"ok": True}
 
 
-@app.get("/debug")
-async def debug(x_api_key: str | None = Header(default=None)):
-    check_auth(x_api_key)
-    og = await get_client()
-
-    info = {
-        "has_session_key": bool(getattr(og, "_session_key", None)),
-        "team_id": getattr(og, "_team_id", None),
-    }
-
-    cookies = {"ourgroceries-auth": og._session_key}
-    payload = {"command": "getOverview", "teamId": og._team_id}
-    async with aiohttp.ClientSession(cookies=cookies) as session:
-        async with session.post("https://www.ourgroceries.com/your-lists/", json=payload) as resp:
-            info["raw_status"] = resp.status
-            info["raw_content_type"] = resp.content_type
-            text = await resp.text()
-            info["raw_body_preview"] = text[:500]
-
-    return info
-
-
 @app.post("/sync")
 async def sync(req: SyncRequest, x_api_key: str | None = Header(default=None)):
     check_auth(x_api_key)
@@ -109,13 +110,11 @@ async def sync(req: SyncRequest, x_api_key: str | None = Header(default=None)):
         return {"success": True, "added": 0}
 
     global _og_client
-    og = await get_client()
-
     try:
         list_id = await get_target_list_id()
         added = 0
         for item in req.items:
-            await og.add_item_to_list(list_id, item)
+            await og_post("insertItem", {"listId": list_id, "value": item, "categoryId": "uncategorized"})
             added += 1
         return {"success": True, "added": added}
     except HTTPException:
