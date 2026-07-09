@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: hutomagnes-ourgroceries
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OG_USERNAME
+        sync: false
+      - key: OG_PASSWORD
+        sync: false
+      - key: API_TOKEN
+        sync: false
+      - key: OG_LIST_NAME
+        value: "Havi menü"

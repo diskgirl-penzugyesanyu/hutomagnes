@@ -1,0 +1,9 @@
+{
+  "appId": "hu.heni.hutomagnes",
+  "appName": "Hűtőmágnes",
+  "webDir": "dist",
+  "backgroundColor": "#1B1230",
+  "server": {
+    "androidScheme": "https"
+  }
+}
