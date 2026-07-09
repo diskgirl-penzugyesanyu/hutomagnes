@@ -10,6 +10,7 @@ valtozokent elnek a Render szolgaltatason -- soha nem kerulnek az APK-ba.
 
 import os
 
+import aiohttp
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from ourgroceries import OurGroceries
@@ -76,6 +77,28 @@ def check_auth(x_api_key: str | None):
 @app.get("/health")
 async def health():
     return {"ok": True}
+
+
+@app.get("/debug")
+async def debug(x_api_key: str | None = Header(default=None)):
+    check_auth(x_api_key)
+    og = await get_client()
+
+    info = {
+        "has_session_key": bool(getattr(og, "_session_key", None)),
+        "team_id": getattr(og, "_team_id", None),
+    }
+
+    cookies = {"ourgroceries-auth": og._session_key}
+    payload = {"command": "getOverview", "teamId": og._team_id}
+    async with aiohttp.ClientSession(cookies=cookies) as session:
+        async with session.post("https://www.ourgroceries.com/your-lists/", json=payload) as resp:
+            info["raw_status"] = resp.status
+            info["raw_content_type"] = resp.content_type
+            text = await resp.text()
+            info["raw_body_preview"] = text[:500]
+
+    return info
 
 
 @app.post("/sync")
