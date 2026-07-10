@@ -57,10 +57,24 @@ export function emptyRecipe() {
     baseServings: 4,
     ingredients: [emptyIngredient()],
     instructions: "",
+    macros: null, // { calories, protein_g, fat_g, fiber_g } az alap adagszámra, vagy null ha nincs megadva
     sourceType: "manual",
     sourceUrl: null,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+// A makrókat az adott naphoz megadott adagszámra skálázza (ua. arányban, mint a hozzávalókat).
+export function scaleMacros(macros, fromServings, toServings) {
+  if (!macros) return null;
+  const ratio = (Number(toServings) || 1) / (Number(fromServings) || 1);
+  const round1 = (n) => Math.round((Number(n) || 0) * ratio * 10) / 10;
+  return {
+    calories: round1(macros.calories),
+    protein_g: round1(macros.protein_g),
+    fat_g: round1(macros.fat_g),
+    fiber_g: round1(macros.fiber_g),
   };
 }
 

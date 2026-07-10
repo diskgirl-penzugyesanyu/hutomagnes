@@ -231,7 +231,7 @@ function DayDetailSheet({ ds, recipes, entries, onClose, onAddNew, onEditEntry, 
                 </button>
                 {recipe && (
                   <button
-                    onClick={() => openInKalorianaplo(`${recipe.name} (${entry.servings} adag)`)}
+                    onClick={() => openInKalorianaplo(recipe, entry.servings)}
                     className="kn-tap ml-2"
                     style={{ color: C.sage }}
                     aria-label="Naplózás a Kalórianaplóba"

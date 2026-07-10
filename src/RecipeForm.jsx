@@ -7,6 +7,8 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
   const isEdit = !!recipe.name;
   const [draft, setDraft] = useState(recipe);
   const [error, setError] = useState("");
+  const [hasMacros, setHasMacros] = useState(!!recipe.macros);
+  const [macros, setMacros] = useState(recipe.macros || { calories: "", protein_g: "", fat_g: "", fiber_g: "" });
 
   function setField(key, value) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -46,6 +48,14 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
       ingredients: draft.ingredients
         .filter((i) => i.name && i.name.trim())
         .map((i) => ({ name: i.name.trim(), amount: Number(i.amount) || 1, unit: i.unit || "db" })),
+      macros: hasMacros
+        ? {
+            calories: Number(macros.calories) || 0,
+            protein_g: Number(macros.protein_g) || 0,
+            fat_g: Number(macros.fat_g) || 0,
+            fiber_g: Number(macros.fiber_g) || 0,
+          }
+        : null,
       updatedAt: new Date().toISOString(),
     };
     const err = validateRecipe(clean);
@@ -136,6 +146,40 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
         >
           <Plus size={16} /> Hozzávaló hozzáadása
         </button>
+
+        <label className="flex items-center gap-2 mb-3 kn-tap" style={{ cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={hasMacros}
+            onChange={(e) => setHasMacros(e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: C.sage }}
+          />
+          <span style={{ color: C.inkSoft, fontSize: 13 }}>Ismerem a makrókat ehhez a recepthez (a teljes alap adagszámra)</span>
+        </label>
+
+        {hasMacros && (
+          <div className="rounded-xl p-3 kn-card mb-4">
+            <div className="flex gap-2 mb-2">
+              <div className="flex-1">
+                <NumField label="Kalória (kcal)" value={macros.calories} onChange={(v) => setMacros((m) => ({ ...m, calories: v }))} />
+              </div>
+              <div className="flex-1">
+                <NumField label="Fehérje (g)" value={macros.protein_g} onChange={(v) => setMacros((m) => ({ ...m, protein_g: v }))} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <NumField label="Zsír (g)" value={macros.fat_g} onChange={(v) => setMacros((m) => ({ ...m, fat_g: v }))} />
+              </div>
+              <div className="flex-1">
+                <NumField label="Rost (g)" value={macros.fiber_g} onChange={(v) => setMacros((m) => ({ ...m, fiber_g: v }))} />
+              </div>
+            </div>
+            <div style={{ color: C.inkSoft, fontSize: 11, marginTop: 6 }}>
+              A Kalórianaplóba küldéskor ezekből az értékekből automatikusan átskálázza az aznapi adagszámra, és nem hívja meg az AI-becslést.
+            </div>
+          </div>
+        )}
 
         <TextAreaField label="Elkészítés" value={draft.instructions} onChange={(v) => setField("instructions", v)} placeholder="Lépésről lépésre..." />
 
