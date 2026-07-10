@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, X, Trash2, ShoppingCart, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Trash2, ShoppingCart, Search, Utensils } from "lucide-react";
 import { C, NumField, Field } from "./shared.jsx";
 import { dateStr, todayStr } from "./shared.jsx";
+import { openInKalorianaplo } from "./kalorianaploBridge.js";
 import {
   HU_WEEKDAYS,
   monthLabel,
@@ -228,6 +229,17 @@ function DayDetailSheet({ ds, recipes, entries, onClose, onAddNew, onEditEntry, 
                     {entry.addedToShoppingListAt ? " · a listán" : ""}
                   </div>
                 </button>
+                {recipe && (
+                  <button
+                    onClick={() => openInKalorianaplo(`${recipe.name} (${entry.servings} adag)`)}
+                    className="kn-tap ml-2"
+                    style={{ color: C.sage }}
+                    aria-label="Naplózás a Kalórianaplóba"
+                    title="Naplózás a Kalórianaplóba"
+                  >
+                    <Utensils size={17} />
+                  </button>
+                )}
                 <button onClick={() => onDeleteEntry(entry.id)} className="kn-tap ml-2" style={{ color: C.coral }}>
                   <Trash2 size={17} />
                 </button>
