@@ -5,6 +5,7 @@ android/.gradle/
 android/build/
 android/local.properties
 android/app/release/
+android/.idea/
 *.log
 .DS_Store
 
