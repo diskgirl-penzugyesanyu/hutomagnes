@@ -17,6 +17,7 @@ export const UNITS = [
   { value: "bogre", label: "bögre" },
   { value: "evokanal", label: "evőkanál" },
   { value: "teaskanal", label: "teáskanál" },
+  { value: "csipet", label: "csipet" },
 ];
 
 export function unitLabel(value) {
