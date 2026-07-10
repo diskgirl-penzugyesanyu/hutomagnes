@@ -23,7 +23,7 @@ from ourgroceries.exceptions import InvalidLoginException
 OG_USERNAME = os.environ.get("OG_USERNAME")
 OG_PASSWORD = os.environ.get("OG_PASSWORD")
 API_TOKEN = os.environ.get("API_TOKEN")
-OG_LIST_NAME = os.environ.get("OG_LIST_NAME", "Havi menü")
+OG_LIST_NAME = os.environ.get("OG_LIST_NAME") or "Havi menü"
 
 YOUR_LISTS_URL = "https://www.ourgroceries.com/your-lists/"
 
