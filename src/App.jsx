@@ -4,6 +4,8 @@ import { C, EmptyState, FadeIn, ConfirmDeleteModal } from "./shared.jsx";
 import { kvGet, kvSet } from "./storage.js";
 import { emptyRecipe, formatIngredientLine } from "./recipes.js";
 import RecipeForm from "./RecipeForm.jsx";
+import RecipeSourcePicker from "./RecipeSourcePicker.jsx";
+import ImportRecipeSheet from "./ImportRecipeSheet.jsx";
 import CalendarView from "./CalendarView.jsx";
 import ShoppingListView from "./ShoppingListView.jsx";
 import TransferReviewSheet from "./TransferReviewSheet.jsx";
@@ -27,6 +29,9 @@ export default function App() {
   const [shoppingList, setShoppingList] = useState({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
+  const [importMode, setImportMode] = useState(null); // null | "photo" | "paste"
+  const [importedDraft, setImportedDraft] = useState(null);
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [deletingRecipe, setDeletingRecipe] = useState(null);
   const [transferRange, setTransferRange] = useState(null); // {start, end}
@@ -70,6 +75,7 @@ export default function App() {
     await persistRecipes({ ...recipes, [recipe.id]: recipe });
     setShowForm(false);
     setEditingRecipe(null);
+    setImportedDraft(null);
   }
 
   const affectedEntryCount = deletingRecipe
@@ -271,7 +277,7 @@ export default function App() {
 
       {section === "library" && (
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => setSourcePickerOpen(true)}
           className="fixed rounded-full flex items-center justify-center kn-tap"
           style={{
             width: 58,
@@ -284,6 +290,43 @@ export default function App() {
         >
           <Plus size={26} color="white" />
         </button>
+      )}
+
+      {sourcePickerOpen && (
+        <RecipeSourcePicker
+          onClose={() => setSourcePickerOpen(false)}
+          onPickManual={() => {
+            setSourcePickerOpen(false);
+            setShowForm(true);
+          }}
+          onPickPhoto={() => {
+            setSourcePickerOpen(false);
+            setImportMode("photo");
+          }}
+          onPickPaste={() => {
+            setSourcePickerOpen(false);
+            setImportMode("paste");
+          }}
+        />
+      )}
+
+      {importMode && (
+        <ImportRecipeSheet
+          mode={importMode}
+          onClose={() => setImportMode(null)}
+          onExtracted={(draft) => {
+            setImportMode(null);
+            setImportedDraft(draft);
+          }}
+          onFallbackManual={() => {
+            setImportMode(null);
+            setShowForm(true);
+          }}
+        />
+      )}
+
+      {importedDraft && (
+        <RecipeForm recipe={importedDraft} onClose={() => setImportedDraft(null)} onSave={saveRecipe} />
       )}
 
       {showForm && <RecipeForm recipe={emptyRecipe()} onClose={() => setShowForm(false)} onSave={saveRecipe} />}

@@ -73,6 +73,12 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
           </div>
         </div>
 
+        {recipe._warning && (
+          <div className="rounded-xl p-3 mb-3" style={{ background: C.amberBg, color: C.amber, fontSize: 12.5, lineHeight: 1.5 }}>
+            {recipe._warning}
+          </div>
+        )}
+
         <Field label="Recept neve" value={draft.name} onChange={(v) => setField("name", v)} placeholder="pl. Rakott karfiol" />
         <NumField label="Alap adagszám" value={draft.baseServings} onChange={(v) => setField("baseServings", v)} placeholder="4" />
 
