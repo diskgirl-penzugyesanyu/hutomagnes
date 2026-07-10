@@ -8,7 +8,7 @@ import { UNITS, newId } from "./recipes.js";
 const UNIT_VALUES = UNITS.map((u) => u.value).join(", ");
 
 const RECIPE_SYSTEM_PROMPT = `Egy magyar háztartás recept-adatait kell kinyerned szövegből (weboldal tartalma vagy beillesztett leírás). Válaszolj KIZÁRÓLAG a következő JSON formátumban, más szöveg nélkül:
-{"name": "...", "baseServings": 4, "ingredients": [{"name": "...", "amount": 1, "unit": "db"}], "instructions": "..."}
+{"name": "...", "baseServings": 4, "ingredients": [{"name": "...", "amount": 1, "unit": "db"}], "instructions": "...", "macros": null}
 
 Szabályok:
 - "unit" mindig ez a zárt lista egyike legyen: ${UNIT_VALUES}. Ha a szövegben más mértékegység szerepel (pl. "evőkanál", "csipet"), és nincs jó megfelelő a listában, tedd a mennyiség leírását a "name" mezőbe (pl. name: "olívaolaj (2 evőkanál)", amount: 1, unit: "db"), NE válassz rossz egységet.
@@ -16,10 +16,11 @@ Szabályok:
 - Ha nincs megadva pontosan mennyiség egy hozzávalónál, amount legyen 1, unit legyen "db".
 - Ha nincs megadva adagszám, becsülj egy jellemző magyar háztartási adagszámot (pl. 4).
 - "instructions" legyen a teljes elkészítési leírás, magyarul, bekezdésekre tagolva ha lehet.
-- Mindig adj vissza valamilyen becslést, még hiányos/bizonytalan bemenet esetén is -- ne utasítsd vissza a feladatot.`;
+- "macros": HA a forrás szöveg explicit megad tápérték-adatot a teljes receptre vagy egy adagra (pl. "tápérték/adag: 450 kcal, 32g fehérje, 18g zsír, 4g rost", vagy egy táblázat), akkor töltsd ki: {"calories": szám, "protein_g": szám, "fat_g": szám, "fiber_g": szám} -- ha az adat egy adagra vonatkozik, szorozd fel a "baseServings" értékkel, hogy a TELJES receptre vonatkozzon. Ha nincs ilyen adat a szövegben, "macros" legyen null. SOHA ne becsülj/találgass makrót, ha nincs explicit megadva -- ez esetben mindig null.
+- Mindig adj vissza valamilyen becslést a hozzávalókra/leírásra, még hiányos/bizonytalan bemenet esetén is -- ne utasítsd vissza a feladatot.`;
 
 const RECIPE_PHOTO_SYSTEM_PROMPT = `Egy fényképen (esetleg kézzel írt receptkártyán) szereplő recept adatait kell kiolvasnod és kinyerned. Válaszolj KIZÁRÓLAG a következő JSON formátumban, más szöveg nélkül:
-{"name": "...", "baseServings": 4, "ingredients": [{"name": "...", "amount": 1, "unit": "db"}], "instructions": "..."}
+{"name": "...", "baseServings": 4, "ingredients": [{"name": "...", "amount": 1, "unit": "db"}], "instructions": "...", "macros": null}
 
 Szabályok:
 - A kézírást legjobb tudásod szerint olvasd ki -- ha egy szó bizonytalan, inkább becsüld meg értelmesen, mint hogy kihagyd.
@@ -27,7 +28,16 @@ Szabályok:
 - "Fej" mértékegység (pl. "1 fej vöröshagyma", "1 fej lilahagyma", "1 fej fokhagyma", "1 fej hagyma") mindig unit: "db"-nek felel meg, a megadott számmal -- a hagyma/fokhagyma "feje" egy darabot jelent.
 - Ha egy hozzávalónál nincs pontos mennyiség, amount legyen 1, unit legyen "db".
 - Ha nincs megadva adagszám, becsülj egy jellemző magyar háztartási adagszámot (pl. 4).
-- Mindig adj vissza valamilyen becslést, még ha a kép részben olvashatatlan is -- ne utasítsd vissza a feladatot.`;
+- "macros": HA a képen explicit szerepel tápérték-adat a receptre vagy egy adagra (pl. nyomtatott táblázat), töltsd ki: {"calories": szám, "protein_g": szám, "fat_g": szám, "fiber_g": szám}, egy adagra vonatkozó adatnál szorozd fel a "baseServings" értékkel. Ha nincs ilyen adat a képen, "macros" legyen null. SOHA ne becsülj/találgass makrót a hozzávalókból -- csak akkor töltsd ki, ha ténylegesen le van írva/nyomtatva.
+- Mindig adj vissza valamilyen becslést a hozzávalókra/leírásra, még ha a kép részben olvashatatlan is -- ne utasítsd vissza a feladatot.`;
+
+function normalizeMacros(m) {
+  if (!m || typeof m !== "object") return null;
+  const nums = ["calories", "protein_g", "fat_g", "fiber_g"].map((k) => Number(m[k]));
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+  const [calories, protein_g, fat_g, fiber_g] = nums;
+  return { calories, protein_g, fat_g, fiber_g };
+}
 
 function normalizeDraft(parsed, sourceType, sourceUrl) {
   const now = new Date().toISOString();
@@ -44,6 +54,7 @@ function normalizeDraft(parsed, sourceType, sourceUrl) {
     baseServings: Number(parsed.baseServings) || 4,
     ingredients: ingredients.length ? ingredients : [{ name: "", amount: 1, unit: "db" }],
     instructions: String(parsed.instructions || "").trim(),
+    macros: normalizeMacros(parsed.macros),
     sourceType,
     sourceUrl: sourceUrl || null,
     createdAt: now,
