@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, Loader2, ClipboardPaste, Camera } from "lucide-react";
+import { X, Loader2, ClipboardPaste, Camera, Images } from "lucide-react";
 import { C, TextAreaField } from "./shared.jsx";
 import { extractRecipeFromText, extractRecipeFromPhoto, extractRecipeFromSharedImage } from "./recipeImport.js";
 
@@ -9,7 +9,8 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
     initialImage || initialText ? "loading" : mode === "photo" ? "pick" : "input"
   ); // "pick" | "input" | "loading" | "error"
   const [error, setError] = useState("");
-  const fileRef = useRef(null);
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
 
   async function runPaste(text) {
     const value = (text ?? pasteText).trim();
@@ -114,14 +115,24 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
             <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>
               Fotózd le vagy válaszd ki a receptet (kézzel írt is lehet) -- az AI megpróbálja kiolvasni a hozzávalókat és a leírást.
             </div>
-            <button
-              onClick={() => fileRef.current && fileRef.current.click()}
-              className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
-              style={{ background: C.sage, color: "white", fontWeight: 600 }}
-            >
-              <Camera size={18} /> Fotó kiválasztása
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => cameraRef.current && cameraRef.current.click()}
+                className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
+                style={{ background: C.sage, color: "white", fontWeight: 600 }}
+              >
+                <Camera size={18} /> Fénykép készítése
+              </button>
+              <button
+                onClick={() => galleryRef.current && galleryRef.current.click()}
+                className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
+                style={{ background: C.cardAlt, color: C.ink, fontWeight: 600 }}
+              >
+                <Images size={18} /> Kiválasztás galériából
+              </button>
+            </div>
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+            <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
           </>
         )}
 
