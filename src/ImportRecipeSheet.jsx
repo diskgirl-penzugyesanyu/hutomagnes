@@ -1,23 +1,38 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, Loader2, ClipboardPaste, Camera } from "lucide-react";
 import { C, TextAreaField } from "./shared.jsx";
-import { extractRecipeFromText, extractRecipeFromPhoto } from "./recipeImport.js";
+import { extractRecipeFromText, extractRecipeFromPhoto, extractRecipeFromSharedImage } from "./recipeImport.js";
 
-export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallbackManual }) {
-  const [pasteText, setPasteText] = useState("");
-  const [stage, setStage] = useState(mode === "photo" ? "pick" : "input"); // "pick" | "input" | "loading" | "error"
+export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallbackManual, initialText, initialImage }) {
+  const [pasteText, setPasteText] = useState(initialText || "");
+  const [stage, setStage] = useState(
+    initialImage || initialText ? "loading" : mode === "photo" ? "pick" : "input"
+  ); // "pick" | "input" | "loading" | "error"
   const [error, setError] = useState("");
   const fileRef = useRef(null);
 
-  async function runPaste() {
-    if (!pasteText.trim()) return;
+  async function runPaste(text) {
+    const value = (text ?? pasteText).trim();
+    if (!value) return;
     setStage("loading");
     setError("");
     try {
-      const draft = await extractRecipeFromText(pasteText);
+      const draft = await extractRecipeFromText(value);
       onExtracted(draft);
     } catch (e) {
       setError(e.message || "Nem sikerült feldolgozni.");
+      setStage("error");
+    }
+  }
+
+  async function runSharedImage() {
+    setStage("loading");
+    setError("");
+    try {
+      const draft = await extractRecipeFromSharedImage(initialImage.value, initialImage.mimeType);
+      onExtracted(draft);
+    } catch (err) {
+      setError(err.message || "Nem sikerült feldolgozni a képet.");
       setStage("error");
     }
   }
@@ -35,6 +50,15 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
       setStage("error");
     }
   }
+
+  useEffect(() => {
+    if (mode === "photo" && initialImage) {
+      runSharedImage();
+    } else if (mode === "paste" && initialText) {
+      runPaste(initialText);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div

@@ -2,7 +2,7 @@
 // szövegből (pl. social media leírás) egyaránt ugyanazt a JSON-formát kéri az
 // AI-tól, amit a felülvizsgáló űrlap (RecipeForm) be tud tölteni.
 
-import { askAI, compressImage, fetchRecipeText } from "./aiProxy.js";
+import { askAI, compressImage, compressDataUrl, fetchRecipeText } from "./aiProxy.js";
 import { UNITS, newId } from "./recipes.js";
 
 const UNIT_VALUES = UNITS.map((u) => u.value).join(", ");
@@ -12,6 +12,7 @@ const RECIPE_SYSTEM_PROMPT = `Egy magyar háztartás recept-adatait kell kinyern
 
 Szabályok:
 - "unit" mindig ez a zárt lista egyike legyen: ${UNIT_VALUES}. Ha a szövegben más mértékegység szerepel (pl. "evőkanál", "csipet"), és nincs jó megfelelő a listában, tedd a mennyiség leírását a "name" mezőbe (pl. name: "olívaolaj (2 evőkanál)", amount: 1, unit: "db"), NE válassz rossz egységet.
+- "Fej" mértékegység (pl. "1 fej vöröshagyma", "1 fej lilahagyma", "1 fej fokhagyma", "1 fej hagyma") mindig unit: "db"-nek felel meg, a megadott számmal -- a hagyma/fokhagyma "feje" egy darabot jelent.
 - Ha nincs megadva pontosan mennyiség egy hozzávalónál, amount legyen 1, unit legyen "db".
 - Ha nincs megadva adagszám, becsülj egy jellemző magyar háztartási adagszámot (pl. 4).
 - "instructions" legyen a teljes elkészítési leírás, magyarul, bekezdésekre tagolva ha lehet.
@@ -23,6 +24,7 @@ const RECIPE_PHOTO_SYSTEM_PROMPT = `Egy fényképen (esetleg kézzel írt recept
 Szabályok:
 - A kézírást legjobb tudásod szerint olvasd ki -- ha egy szó bizonytalan, inkább becsüld meg értelmesen, mint hogy kihagyd.
 - "unit" mindig ez a zárt lista egyike legyen: ${UNIT_VALUES}. Ha nincs jó megfelelő, a mennyiséget írd a "name" mezőbe, unit legyen "db", amount legyen 1.
+- "Fej" mértékegység (pl. "1 fej vöröshagyma", "1 fej lilahagyma", "1 fej fokhagyma", "1 fej hagyma") mindig unit: "db"-nek felel meg, a megadott számmal -- a hagyma/fokhagyma "feje" egy darabot jelent.
 - Ha egy hozzávalónál nincs pontos mennyiség, amount legyen 1, unit legyen "db".
 - Ha nincs megadva adagszám, becsülj egy jellemző magyar háztartási adagszámot (pl. 4).
 - Mindig adj vissza valamilyen becslést, még ha a kép részben olvashatatlan is -- ne utasítsd vissza a feladatot.`;
@@ -82,8 +84,7 @@ export async function extractRecipeFromLink(url) {
   return extractRecipeFromText(url, "link-import");
 }
 
-export async function extractRecipeFromPhoto(file) {
-  const b64 = await compressImage(file);
+async function extractRecipeFromCompressedB64(b64) {
   const messages = [
     {
       role: "user",
@@ -95,4 +96,15 @@ export async function extractRecipeFromPhoto(file) {
   ];
   const parsed = await askAI(messages, RECIPE_PHOTO_SYSTEM_PROMPT);
   return normalizeDraft(parsed, "photo-import", null);
+}
+
+export async function extractRecipeFromPhoto(file) {
+  const b64 = await compressImage(file);
+  return extractRecipeFromCompressedB64(b64);
+}
+
+// Natív "Megosztás" útján (Galériából) érkező, már base64-kódolt kép feldolgozása.
+export async function extractRecipeFromSharedImage(base64, mimeType = "image/jpeg") {
+  const b64 = await compressDataUrl(`data:${mimeType};base64,${base64}`);
+  return extractRecipeFromCompressedB64(b64);
 }

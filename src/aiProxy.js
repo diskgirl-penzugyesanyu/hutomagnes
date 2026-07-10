@@ -23,30 +23,38 @@ export async function askAI(messages, system) {
 }
 
 // Kép tömörítése base64 JPEG-gé küldés előtt (ua. minta, mint a Kalórianaplóban).
+// A mag (compressDataUrl) bármilyen data URL-t elfogad, hogy a natív megosztásból
+// érkező (már base64-ként meglévő) kép is ugyanezen menjen át, ne csak a fájl-inputos.
+export function compressDataUrl(dataUrl, maxDim = 1280, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("Nem sikerült beolvasni a képet."));
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const outUrl = canvas.toDataURL("image/jpeg", quality);
+      resolve(outUrl.split(",")[1]);
+    };
+    img.src = dataUrl;
+  });
+}
+
 export function compressImage(file, maxDim = 1280, quality = 0.75) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Nem sikerült beolvasni a képet."));
     reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Nem sikerült beolvasni a képet."));
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > height && width > maxDim) {
-          height = Math.round((height * maxDim) / width);
-          width = maxDim;
-        } else if (height > maxDim) {
-          width = Math.round((width * maxDim) / height);
-          height = maxDim;
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
-        resolve(dataUrl.split(",")[1]);
-      };
-      img.src = reader.result;
+      compressDataUrl(reader.result, maxDim, quality).then(resolve, reject);
     };
     reader.readAsDataURL(file);
   });
@@ -59,7 +67,11 @@ export async function fetchRecipeText(url) {
     const res = await fetch("https://r.jina.ai/" + url);
     if (!res.ok) return "";
     const text = await res.text();
-    return text.slice(0, 8000);
+    // A receptes oldalak sokszor 20-25 ezer karakteres olvasható szöveget adnak
+    // (navigáció, reklámok, kapcsolódó receptek is benne vannak) -- a hozzávalók
+    // listája gyakran csak ezen túl kezdődik, 8000 karakternél korábban levágva
+    // az AI már a hozzávalók nélkül próbált becsülni (találgatott mennyiségeket).
+    return text.slice(0, 24000);
   } catch {
     return "";
   }

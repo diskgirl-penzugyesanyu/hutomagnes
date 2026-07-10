@@ -20,6 +20,17 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
     });
   }
 
+  function scaleBy(factor) {
+    setDraft((d) => ({
+      ...d,
+      baseServings: Math.round((Number(d.baseServings) || 1) * factor * 10) / 10,
+      ingredients: d.ingredients.map((i) => ({
+        ...i,
+        amount: Math.round((Number(i.amount) || 0) * factor * 100) / 100,
+      })),
+    }));
+  }
+
   function addIngredientRow() {
     setDraft((d) => ({ ...d, ingredients: [...d.ingredients, emptyIngredient()] }));
   }
@@ -81,6 +92,19 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
 
         <Field label="Recept neve" value={draft.name} onChange={(v) => setField("name", v)} placeholder="pl. Rakott karfiol" />
         <NumField label="Alap adagszám" value={draft.baseServings} onChange={(v) => setField("baseServings", v)} placeholder="4" />
+        <div className="flex items-center gap-2 mb-3" style={{ marginTop: -6 }}>
+          <span style={{ color: C.inkSoft, fontSize: 11.5 }}>Szorzás:</span>
+          {[2, 3, 4].map((f) => (
+            <button
+              key={f}
+              onClick={() => scaleBy(f)}
+              className="rounded-full px-3 py-1 kn-tap"
+              style={{ background: C.cardAlt, color: C.ink, fontSize: 12, fontWeight: 600 }}
+            >
+              ×{f}
+            </button>
+          ))}
+        </div>
 
         <div style={{ color: C.inkSoft, fontSize: 12, marginTop: 8, marginBottom: 6 }}>Hozzávalók</div>
         <div className="flex flex-col gap-2 mb-2">

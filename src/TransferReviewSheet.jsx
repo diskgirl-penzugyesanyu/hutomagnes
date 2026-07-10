@@ -14,6 +14,10 @@ export default function TransferReviewSheet({ lines, rangeLabel, onCancel, onCon
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, amount: value } : r)));
   }
 
+  function scaleAll(factor) {
+    setRows((rs) => rs.map((r) => ({ ...r, amount: Math.round((Number(r.amount) || 0) * factor * 100) / 100 })));
+  }
+
   const checkedCount = rows.filter((r) => r.checked).length;
 
   function handleConfirm() {
@@ -40,9 +44,25 @@ export default function TransferReviewSheet({ lines, rangeLabel, onCancel, onCon
             <X size={22} />
           </button>
         </div>
-        <div style={{ color: C.inkSoft, fontSize: 12.5, marginBottom: 14 }}>
+        <div style={{ color: C.inkSoft, fontSize: 12.5, marginBottom: 10 }}>
           {rangeLabel} · vedd ki a pipát, ami már megvan itthon, a mennyiséget pedig csökkentheted, ha van otthon egy kicsi.
         </div>
+
+        {rows.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <span style={{ color: C.inkSoft, fontSize: 11.5 }}>Mind szorzása:</span>
+            {[2, 3, 4].map((f) => (
+              <button
+                key={f}
+                onClick={() => scaleAll(f)}
+                className="rounded-full px-3 py-1 kn-tap"
+                style={{ background: C.cardAlt, color: C.ink, fontSize: 12, fontWeight: 600 }}
+              >
+                ×{f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {rows.length === 0 && (
           <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 16 }}>

@@ -12,6 +12,7 @@ import ShoppingListView from "./ShoppingListView.jsx";
 import TransferReviewSheet from "./TransferReviewSheet.jsx";
 import { getEntriesInRange } from "./mealPlanCalendar.js";
 import { buildTransferPreview, mergeIntoShoppingList, addAdhocItem, setLineStatus } from "./shoppingList.js";
+import { consumePendingShare } from "./nativeShareReceiver.js";
 
 const RECIPES_KEY = "recipes";
 const MEAL_PLAN_KEY = "meal-plan";
@@ -36,6 +37,28 @@ export default function App() {
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [deletingRecipe, setDeletingRecipe] = useState(null);
   const [transferRange, setTransferRange] = useState(null); // {start, end}
+  const [nativeShare, setNativeShare] = useState(null); // {type, value, mimeType} | null
+
+  useEffect(() => {
+    async function checkShare() {
+      const shared = await consumePendingShare();
+      if (shared) setNativeShare(shared);
+    }
+    checkShare();
+
+    let sub;
+    (async () => {
+      try {
+        const { App: CapacitorApp } = await import("@capacitor/app");
+        sub = await CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) checkShare();
+        });
+      } catch {}
+    })();
+    return () => {
+      if (sub) sub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -336,6 +359,23 @@ export default function App() {
           }}
           onFallbackManual={() => {
             setImportMode(null);
+            setShowForm(true);
+          }}
+        />
+      )}
+
+      {nativeShare && (
+        <ImportRecipeSheet
+          mode={nativeShare.type === "image" ? "photo" : "paste"}
+          initialText={nativeShare.type === "text" ? nativeShare.value : undefined}
+          initialImage={nativeShare.type === "image" ? nativeShare : undefined}
+          onClose={() => setNativeShare(null)}
+          onExtracted={(draft) => {
+            setNativeShare(null);
+            setImportedDraft(draft);
+          }}
+          onFallbackManual={() => {
+            setNativeShare(null);
             setShowForm(true);
           }}
         />
