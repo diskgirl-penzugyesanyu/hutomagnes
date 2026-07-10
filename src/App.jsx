@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, Plus, ChevronRight, Users, CalendarDays, ShoppingCart } from "lucide-react";
+import { BookOpen, Plus, ChevronRight, Users, CalendarDays, ShoppingCart, Download } from "lucide-react";
 import { C, EmptyState, FadeIn, ConfirmDeleteModal } from "./shared.jsx";
 import { kvGet, kvSet } from "./storage.js";
 import { emptyRecipe, formatIngredientLine } from "./recipes.js";
+import { downloadRecipesCsv } from "./csv.js";
 import RecipeForm from "./RecipeForm.jsx";
 import RecipeSourcePicker from "./RecipeSourcePicker.jsx";
 import ImportRecipeSheet from "./ImportRecipeSheet.jsx";
@@ -207,6 +208,16 @@ export default function App() {
                 title="Még nincs recept felvéve"
                 subtitle="Koppints a jobb alsó gombra az első recept hozzáadásához."
               />
+            )}
+
+            {recipeList.length > 0 && (
+              <button
+                onClick={() => downloadRecipesCsv(recipes)}
+                className="w-full rounded-xl py-2.5 kn-tap flex items-center justify-center gap-2 mb-3"
+                style={{ background: C.cardAlt, color: C.ink, fontWeight: 600, fontSize: 13 }}
+              >
+                <Download size={15} /> Receptek mentése CSV-be
+              </button>
             )}
 
             <div className="flex flex-col gap-2">
