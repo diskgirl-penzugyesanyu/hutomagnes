@@ -14,6 +14,9 @@ export const UNITS = [
   { value: "konzerv", label: "konzerv" },
   { value: "doboz", label: "doboz" },
   { value: "zacsko", label: "zacskó" },
+  { value: "bogre", label: "bögre" },
+  { value: "evokanal", label: "evőkanál" },
+  { value: "teaskanal", label: "teáskanál" },
 ];
 
 export function unitLabel(value) {

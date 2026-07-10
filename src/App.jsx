@@ -222,14 +222,19 @@ export default function App() {
                         {r.name}
                       </div>
                       <div className="flex items-center gap-1 mt-1" style={{ color: C.inkSoft, fontSize: 12 }}>
-                        <Users size={12} />
-                        <span>{r.baseServings} adag</span>
-                        <span>·</span>
-                        <span>
-                          {r.ingredients.length} hozzávaló
-                          {r.ingredients[0] ? ` (${formatIngredientLine(r.ingredients[0])}${r.ingredients.length > 1 ? ", ..." : ""})` : ""}
-                        </span>
+                        <Users size={12} style={{ flexShrink: 0 }} />
+                        <span style={{ flexShrink: 0 }}>{r.baseServings} adag</span>
+                        <span style={{ flexShrink: 0 }}>·</span>
+                        <span style={{ flexShrink: 0 }}>{r.ingredients.length} hozzávaló</span>
                       </div>
+                      {r.ingredients[0] && (
+                        <div
+                          className="truncate"
+                          style={{ color: C.inkSoft, fontSize: 11.5, marginTop: 3, opacity: 0.75 }}
+                        >
+                          {r.ingredients.map((i) => formatIngredientLine(i)).join(", ")}
+                        </div>
+                      )}
                     </div>
                     <ChevronRight size={18} color={C.inkSoft} />
                   </div>
