@@ -16,6 +16,7 @@ import os
 
 import aiohttp
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ourgroceries import OurGroceries
 from ourgroceries.exceptions import InvalidLoginException
@@ -28,6 +29,13 @@ OG_LIST_NAME = os.environ.get("OG_LIST_NAME") or "Havi menü"
 YOUR_LISTS_URL = "https://www.ourgroceries.com/your-lists/"
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _og_client = None
 _list_id_cache = None

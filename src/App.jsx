@@ -13,6 +13,7 @@ import TransferReviewSheet from "./TransferReviewSheet.jsx";
 import { getEntriesInRange } from "./mealPlanCalendar.js";
 import { buildTransferPreview, mergeIntoShoppingList, addAdhocItem, setLineStatus } from "./shoppingList.js";
 import { consumePendingShare } from "./nativeShareReceiver.js";
+import { syncToOurGroceries } from "./ourGroceries.js";
 
 const RECIPES_KEY = "recipes";
 const MEAL_PLAN_KEY = "meal-plan";
@@ -34,6 +35,8 @@ export default function App() {
   const [sourcePickerOpen, setSourcePickerOpen] = useState(false);
   const [importMode, setImportMode] = useState(null); // null | "photo" | "paste"
   const [importedDraft, setImportedDraft] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   const [editingRecipe, setEditingRecipe] = useState(null);
   const [deletingRecipe, setDeletingRecipe] = useState(null);
   const [transferRange, setTransferRange] = useState(null); // {start, end}
@@ -170,9 +173,17 @@ export default function App() {
   }
 
   async function sendPending(lineIds) {
-    // A tényleges OurGroceries-küldés az 5. fázisban készül el — itt egyelőre
-    // csak lokálisan "elküldött" állapotba kerülnek a tételek.
-    await persistShoppingList(setLineStatus(shoppingList, lineIds, "sent"));
+    setSendError("");
+    const items = lineIds.map((id) => formatIngredientLine(shoppingList[id])).filter(Boolean);
+    setSending(true);
+    try {
+      await syncToOurGroceries(items);
+      await persistShoppingList(setLineStatus(shoppingList, lineIds, "sent"));
+    } catch (e) {
+      setSendError(e.message || "Nem sikerült elküldeni.");
+    } finally {
+      setSending(false);
+    }
   }
 
   async function reopenLine(lineId) {
@@ -305,6 +316,8 @@ export default function App() {
         <FadeIn keyProp="shopping">
           <ShoppingListView
             shoppingList={shoppingList}
+            sending={sending}
+            sendError={sendError}
             onUpdateAmount={updateLineAmount}
             onDeleteLine={deleteLine}
             onAddAdhoc={addAdhocLine}

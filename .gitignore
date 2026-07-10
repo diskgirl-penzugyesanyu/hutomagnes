@@ -6,6 +6,7 @@ android/build/
 android/local.properties
 android/app/release/
 android/.idea/
+.env
 *.log
 .DS_Store
 

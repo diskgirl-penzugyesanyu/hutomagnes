@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Trash2, Plus, Send, RotateCcw } from "lucide-react";
+import { Trash2, Plus, Send, RotateCcw, Loader2 } from "lucide-react";
 import { C, EmptyState, NumField, Field, SelectField } from "./shared.jsx";
 import { UNITS, unitLabel, emptyIngredient } from "./recipes.js";
 
-export default function ShoppingListView({ shoppingList, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen }) {
+export default function ShoppingListView({ shoppingList, sending, sendError, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen }) {
   const [addingOpen, setAddingOpen] = useState(false);
   const [draft, setDraft] = useState(emptyIngredient());
 
@@ -89,13 +89,21 @@ export default function ShoppingListView({ shoppingList, onUpdateAmount, onDelet
         </button>
       )}
 
+      {sendError && (
+        <div className="rounded-xl p-3 mb-3" style={{ background: C.coralBg, color: C.coral, fontSize: 13, lineHeight: 1.5 }}>
+          {sendError}
+        </div>
+      )}
+
       {pending.length > 0 && (
         <button
           onClick={() => onSend(pending.map((l) => l.id))}
+          disabled={sending}
           className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2 mb-6"
-          style={{ background: C.coral, color: "white", fontWeight: 600 }}
+          style={{ background: sending ? C.cardAlt : C.coral, color: sending ? C.inkSoft : "white", fontWeight: 600 }}
         >
-          <Send size={17} /> Küldés az OurGroceries-be
+          {sending ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
+          {sending ? "Küldés..." : "Küldés az OurGroceries-be"}
         </button>
       )}
 
