@@ -114,7 +114,7 @@ async def sync(req: SyncRequest, x_api_key: str | None = Header(default=None)):
         list_id = await get_target_list_id()
         added = 0
         for item in req.items:
-            await og_post("insertItem", {"listId": list_id, "value": item, "categoryId": "uncategorized"})
+            await og_post("insertItem", {"listId": list_id, "value": item, "categoryId": "uncategorized", "note": None})
             added += 1
         return {"success": True, "added": added}
     except HTTPException:
