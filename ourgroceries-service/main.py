@@ -65,7 +65,10 @@ async def og_post(command, other_payload=None):
         async with session.post(YOUR_LISTS_URL, json=payload) as resp:
             if resp.status != 200:
                 text = await resp.text()
-                raise RuntimeError(f"OurGroceries HTTP {resp.status}: {text[:300]}")
+                raise RuntimeError(
+                    f"OurGroceries HTTP {resp.status} for payload={payload!r}: "
+                    f"body={text[:300]!r} headers={dict(resp.headers)!r}"
+                )
             return await resp.json(content_type=None)
 
 
