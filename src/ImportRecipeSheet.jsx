@@ -146,7 +146,7 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
               rows={6}
             />
             <button
-              onClick={runPaste}
+              onClick={() => runPaste()}
               className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
               style={{ background: C.sage, color: "white", fontWeight: 600 }}
             >
