@@ -75,10 +75,10 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete, category
       }}
     >
       <div
-        className="w-full max-w-md rounded-t-3xl p-5 pb-8 kn-sheet"
-        style={{ background: C.bg, maxHeight: "88vh", overflowY: "auto" }}
+        className="w-full max-w-md rounded-t-3xl kn-sheet flex flex-col"
+        style={{ background: C.bg, maxHeight: "88vh" }}
       >
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center px-5 pt-5 pb-4" style={{ flexShrink: 0 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, color: C.ink }}>
             {isEdit ? "Recept szerkesztése" : "Új recept"}
           </span>
@@ -94,6 +94,7 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete, category
           </div>
         </div>
 
+        <div className="px-5 pb-8" style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {recipe._warning && (
           <div className="rounded-xl p-3 mb-3" style={{ background: C.amberBg, color: C.amber, fontSize: 12.5, lineHeight: 1.5 }}>
             {recipe._warning}
@@ -199,6 +200,7 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete, category
         >
           Mentés
         </button>
+        </div>
       </div>
     </div>
   );

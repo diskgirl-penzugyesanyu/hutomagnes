@@ -224,8 +224,11 @@ function DayDetailSheet({ ds, recipes, entries, onClose, onAddNew, onEditEntry, 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-t-3xl p-5 pb-8 kn-sheet" style={{ background: C.bg, maxHeight: "85vh", overflowY: "auto" }}>
-        <div className="flex justify-between items-center mb-4">
+      <div
+        className="w-full max-w-md rounded-t-3xl kn-sheet flex flex-col"
+        style={{ background: C.bg, maxHeight: "85vh" }}
+      >
+        <div className="flex justify-between items-center px-5 pt-5 pb-4" style={{ flexShrink: 0 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 17, color: C.ink }}>
             {ds}
           </span>
@@ -234,45 +237,47 @@ function DayDetailSheet({ ds, recipes, entries, onClose, onAddNew, onEditEntry, 
           </button>
         </div>
 
-        {entries.length === 0 && (
-          <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 16 }}>Erre a napra még nincs recept betervezve.</div>
-        )}
+        <div className="px-5" style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
+          {entries.length === 0 && (
+            <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 16 }}>Erre a napra még nincs recept betervezve.</div>
+          )}
 
-        <div className="flex flex-col gap-2 mb-4">
-          {entries.map((entry) => {
-            const recipe = recipes[entry.recipeId];
-            const dayLabel = dayIndexLabel(entry, ds);
-            return (
-              <div key={entry.id} className="rounded-xl p-3 kn-card flex items-center justify-between">
-                <button className="text-left flex-1 min-w-0 kn-tap" onClick={() => onEditEntry(entry)}>
-                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>
-                    {recipe ? recipe.name : "(törölt recept)"}
-                  </div>
-                  <div style={{ color: C.inkSoft, fontSize: 12, marginTop: 2 }}>
-                    {entry.servings} adag{dayLabel ? ` · ${dayLabel}` : ""}
-                    {entry.addedToShoppingListAt ? " · a listán" : ""}
-                  </div>
-                </button>
-                {recipe && (
-                  <button
-                    onClick={() => openInKalorianaplo(recipe, entry.servings)}
-                    className="kn-tap ml-2"
-                    style={{ color: C.sage }}
-                    aria-label="Naplózás a Kalórianaplóba"
-                    title="Naplózás a Kalórianaplóba"
-                  >
-                    <Utensils size={17} />
+          <div className="flex flex-col gap-2 mb-4">
+            {entries.map((entry) => {
+              const recipe = recipes[entry.recipeId];
+              const dayLabel = dayIndexLabel(entry, ds);
+              return (
+                <div key={entry.id} className="rounded-xl p-3 kn-card flex items-center justify-between">
+                  <button className="text-left flex-1 min-w-0 kn-tap" onClick={() => onEditEntry(entry)}>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>
+                      {recipe ? recipe.name : "(törölt recept)"}
+                    </div>
+                    <div style={{ color: C.inkSoft, fontSize: 12, marginTop: 2 }}>
+                      {entry.servings} adag{dayLabel ? ` · ${dayLabel}` : ""}
+                      {entry.addedToShoppingListAt ? " · a listán" : ""}
+                    </div>
                   </button>
-                )}
-                <button onClick={() => onDeleteEntry(entry.id)} className="kn-tap ml-2" style={{ color: C.coral }}>
-                  <Trash2 size={17} />
-                </button>
-              </div>
-            );
-          })}
+                  {recipe && (
+                    <button
+                      onClick={() => openInKalorianaplo(recipe, entry.servings)}
+                      className="kn-tap ml-2"
+                      style={{ color: C.sage }}
+                      aria-label="Naplózás a Kalórianaplóba"
+                      title="Naplózás a Kalórianaplóba"
+                    >
+                      <Utensils size={17} />
+                    </button>
+                  )}
+                  <button onClick={() => onDeleteEntry(entry.id)} className="kn-tap ml-2" style={{ color: C.coral }}>
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 px-5 pt-3 pb-8" style={{ flexShrink: 0 }}>
           <button
             onClick={onAddNew}
             className="flex-1 rounded-xl py-2.5 kn-tap flex items-center justify-center gap-2"
@@ -340,8 +345,11 @@ function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClos
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-t-3xl p-5 pb-8 kn-sheet" style={{ background: C.bg, maxHeight: "85vh", overflowY: "auto" }}>
-        <div className="flex justify-between items-center mb-4">
+      <div
+        className="w-full max-w-md rounded-t-3xl kn-sheet flex flex-col"
+        style={{ background: C.bg, maxHeight: "85vh" }}
+      >
+        <div className="flex justify-between items-center px-5 pt-5 pb-4" style={{ flexShrink: 0 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 17, color: C.ink }}>
             {recipe ? recipe.name : "Recept választása"}
           </span>
@@ -350,6 +358,7 @@ function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClos
           </button>
         </div>
 
+        <div className="px-5 pb-8" style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {!recipe && (
           <>
             <div className="relative mb-3">
@@ -456,6 +465,7 @@ function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClos
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );

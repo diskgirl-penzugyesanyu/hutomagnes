@@ -32,7 +32,11 @@ body {
 }
 
 .kn-fade {
-  animation: kn-fade-in .25s ease both;
+  /* Nincs "both": a fill-mode "both"/"forwards" az animáció vége után is megtartaná
+     a (vizuálisan azonos, de nem "none") transform mátrixot, ami position:fixed
+     leszármazottaknak (pl. modálok) hibás containing blockot hozna létre -- emiatt
+     "ragadt" volna a recept-választó/naptár modálok pozíciója sok recept esetén. */
+  animation: kn-fade-in .25s ease;
 }
 @keyframes kn-fade-in {
   from { opacity: 0; transform: translateY(4px); }
@@ -40,7 +44,7 @@ body {
 }
 
 .kn-sheet {
-  animation: kn-sheet-up .28s cubic-bezier(.22,1,.36,1) both;
+  animation: kn-sheet-up .28s cubic-bezier(.22,1,.36,1);
 }
 @keyframes kn-sheet-up {
   from { transform: translateY(24px); opacity: 0; }

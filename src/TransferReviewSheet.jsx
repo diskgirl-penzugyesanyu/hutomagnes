@@ -35,19 +35,25 @@ export default function TransferReviewSheet({ lines, rangeLabel, onCancel, onCon
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-md rounded-t-3xl p-5 pb-8 kn-sheet" style={{ background: C.bg, maxHeight: "88vh", overflowY: "auto" }}>
-        <div className="flex justify-between items-center mb-1">
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, color: C.ink }}>
-            Ellenőrzés átvezetés előtt
-          </span>
-          <button onClick={onCancel} style={{ color: C.inkSoft }}>
-            <X size={22} />
-          </button>
-        </div>
-        <div style={{ color: C.inkSoft, fontSize: 12.5, marginBottom: 10 }}>
-          {rangeLabel} · vedd ki a pipát, ami már megvan itthon, a mennyiséget pedig csökkentheted, ha van otthon egy kicsi.
+      <div
+        className="w-full max-w-md rounded-t-3xl kn-sheet flex flex-col"
+        style={{ background: C.bg, maxHeight: "88vh" }}
+      >
+        <div className="px-5 pt-5" style={{ flexShrink: 0 }}>
+          <div className="flex justify-between items-center mb-1">
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 18, color: C.ink }}>
+              Ellenőrzés átvezetés előtt
+            </span>
+            <button onClick={onCancel} style={{ color: C.inkSoft }}>
+              <X size={22} />
+            </button>
+          </div>
+          <div style={{ color: C.inkSoft, fontSize: 12.5, marginBottom: 10 }}>
+            {rangeLabel} · vedd ki a pipát, ami már megvan itthon, a mennyiséget pedig csökkentheted, ha van otthon egy kicsi.
+          </div>
         </div>
 
+        <div className="px-5 pb-8" style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {rows.length > 0 && (
           <div className="flex items-center gap-2 mb-4">
             <span style={{ color: C.inkSoft, fontSize: 11.5 }}>Mind szorzása:</span>
@@ -96,20 +102,23 @@ export default function TransferReviewSheet({ lines, rangeLabel, onCancel, onCon
             </div>
           ))}
         </div>
+        </div>
 
-        <button
-          onClick={handleConfirm}
-          disabled={checkedCount === 0}
-          className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
-          style={{
-            background: checkedCount === 0 ? C.cardAlt : C.sage,
-            color: checkedCount === 0 ? C.inkSoft : "white",
-            fontWeight: 600,
-          }}
-        >
-          <ShoppingCart size={17} />
-          {checkedCount} tétel hozzáadása a listához
-        </button>
+        <div className="px-5 pt-3 pb-8" style={{ flexShrink: 0 }}>
+          <button
+            onClick={handleConfirm}
+            disabled={checkedCount === 0}
+            className="w-full rounded-xl py-3 kn-tap flex items-center justify-center gap-2"
+            style={{
+              background: checkedCount === 0 ? C.cardAlt : C.sage,
+              color: checkedCount === 0 ? C.inkSoft : "white",
+              fontWeight: 600,
+            }}
+          >
+            <ShoppingCart size={17} />
+            {checkedCount} tétel hozzáadása a listához
+          </button>
+        </div>
       </div>
     </div>
   );
