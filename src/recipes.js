@@ -88,6 +88,26 @@ export function getAllCategories(recipes) {
   return Array.from(set).sort((a, b) => a.localeCompare(b, "hu"));
 }
 
+// Egy kategórianevet átnevez MINDEN olyan receptnél, ahol pontosan szerepel --
+// így egy elgépelt kategórianevet egy helyen lehet javítani, nem receptenként.
+export function renameCategory(recipes, oldName, newName) {
+  const oldTrimmed = (oldName || "").trim();
+  const newTrimmed = (newName || "").trim();
+  const next = { ...recipes };
+  for (const r of Object.values(recipes)) {
+    if ((r.category || "").trim() === oldTrimmed) {
+      next[r.id] = { ...r, category: newTrimmed, updatedAt: new Date().toISOString() };
+    }
+  }
+  return next;
+}
+
+// Egy kategóriát kivesz MINDEN olyan receptből, ahol pontosan szerepel
+// (a kategória-mező üresre áll, a recept maga megmarad).
+export function clearCategory(recipes, name) {
+  return renameCategory(recipes, name, "");
+}
+
 // A makrókat az adott naphoz megadott adagszámra skálázza (ua. arányban, mint a hozzávalókat).
 export function scaleMacros(macros, fromServings, toServings) {
   if (!macros) return null;

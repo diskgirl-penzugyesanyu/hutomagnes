@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, Plus, ChevronRight, Users, CalendarDays, ShoppingCart, Download } from "lucide-react";
+import { BookOpen, Plus, ChevronRight, Users, CalendarDays, ShoppingCart, Download, Pencil } from "lucide-react";
 import { C, EmptyState, FadeIn, ConfirmDeleteModal } from "./shared.jsx";
 import { kvGet, kvSet } from "./storage.js";
-import { emptyRecipe, formatIngredientLine, getAllCategories } from "./recipes.js";
+import { emptyRecipe, formatIngredientLine, getAllCategories, renameCategory, clearCategory } from "./recipes.js";
 import { downloadRecipesCsv } from "./csv.js";
 import RecipeForm from "./RecipeForm.jsx";
 import RecipeSourcePicker from "./RecipeSourcePicker.jsx";
@@ -10,6 +10,7 @@ import ImportRecipeSheet from "./ImportRecipeSheet.jsx";
 import CalendarView from "./CalendarView.jsx";
 import ShoppingListView from "./ShoppingListView.jsx";
 import TransferReviewSheet from "./TransferReviewSheet.jsx";
+import CategoryManagerSheet from "./CategoryManagerSheet.jsx";
 import { getEntriesInRange } from "./mealPlanCalendar.js";
 import { buildTransferPreview, mergeIntoShoppingList, addAdhocItem, setLineStatus, formatLineForExport, mergeDuplicateLines } from "./shoppingList.js";
 import { consumePendingShare } from "./nativeShareReceiver.js";
@@ -42,6 +43,7 @@ export default function App() {
   const [transferRange, setTransferRange] = useState(null); // {start, end}
   const [nativeShare, setNativeShare] = useState(null); // {type, value, mimeType} | null
   const [categoryFilter, setCategoryFilter] = useState(null); // null = "Mind"
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
 
   useEffect(() => {
     async function checkShare() {
@@ -77,6 +79,16 @@ export default function App() {
       setLoading(false);
     })();
   }, []);
+
+  async function handleRenameCategory(oldName, newName) {
+    await persistRecipes(renameCategory(recipes, oldName, newName));
+    if (categoryFilter === oldName) setCategoryFilter(newName.trim() || null);
+  }
+
+  async function handleClearCategory(name) {
+    await persistRecipes(clearCategory(recipes, name));
+    if (categoryFilter === name) setCategoryFilter(null);
+  }
 
   async function persistRecipes(next) {
     setRecipes(next);
@@ -262,37 +274,48 @@ export default function App() {
             )}
 
             {categorySuggestions.length > 0 && (
-              <div className="flex gap-2 mb-3" style={{ overflowX: "auto" }}>
-                <button
-                  onClick={() => setCategoryFilter(null)}
-                  className="rounded-full px-3 py-1.5 kn-tap"
-                  style={{
-                    background: !categoryFilter ? C.sage : C.cardAlt,
-                    color: !categoryFilter ? "white" : C.inkSoft,
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    flexShrink: 0,
-                  }}
-                >
-                  Mind
-                </button>
-                {categorySuggestions.map((c) => (
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex gap-2" style={{ overflowX: "auto", flex: 1, minWidth: 0 }}>
                   <button
-                    key={c}
-                    onClick={() => setCategoryFilter(c)}
+                    onClick={() => setCategoryFilter(null)}
                     className="rounded-full px-3 py-1.5 kn-tap"
                     style={{
-                      background: categoryFilter === c ? C.sage : C.cardAlt,
-                      color: categoryFilter === c ? "white" : C.inkSoft,
+                      background: !categoryFilter ? C.sage : C.cardAlt,
+                      color: !categoryFilter ? "white" : C.inkSoft,
                       fontSize: 12.5,
                       fontWeight: 600,
                       flexShrink: 0,
-                      whiteSpace: "nowrap",
                     }}
                   >
-                    {c}
+                    Mind
                   </button>
-                ))}
+                  {categorySuggestions.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setCategoryFilter(c)}
+                      className="rounded-full px-3 py-1.5 kn-tap"
+                      style={{
+                        background: categoryFilter === c ? C.sage : C.cardAlt,
+                        color: categoryFilter === c ? "white" : C.inkSoft,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setCategoryManagerOpen(true)}
+                  className="kn-tap"
+                  style={{ color: C.inkSoft, flexShrink: 0 }}
+                  aria-label="Kategóriák kezelése"
+                  title="Kategóriák kezelése"
+                >
+                  <Pencil size={16} />
+                </button>
               </div>
             )}
 
@@ -507,6 +530,15 @@ export default function App() {
           rangeLabel={transferLabel}
           onCancel={() => setTransferRange(null)}
           onConfirm={confirmTransfer}
+        />
+      )}
+
+      {categoryManagerOpen && (
+        <CategoryManagerSheet
+          recipes={recipes}
+          onRename={handleRenameCategory}
+          onClear={handleClearCategory}
+          onClose={() => setCategoryManagerOpen(false)}
         />
       )}
     </div>
