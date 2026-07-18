@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, Plus, ChevronRight, Users, CalendarDays, ShoppingCart, Download } from "lucide-react";
 import { C, EmptyState, FadeIn, ConfirmDeleteModal } from "./shared.jsx";
 import { kvGet, kvSet } from "./storage.js";
-import { emptyRecipe, formatIngredientLine } from "./recipes.js";
+import { emptyRecipe, formatIngredientLine, getAllCategories } from "./recipes.js";
 import { downloadRecipesCsv } from "./csv.js";
 import RecipeForm from "./RecipeForm.jsx";
 import RecipeSourcePicker from "./RecipeSourcePicker.jsx";
@@ -41,6 +41,7 @@ export default function App() {
   const [deletingRecipe, setDeletingRecipe] = useState(null);
   const [transferRange, setTransferRange] = useState(null); // {start, end}
   const [nativeShare, setNativeShare] = useState(null); // {type, value, mimeType} | null
+  const [categoryFilter, setCategoryFilter] = useState(null); // null = "Mind"
 
   useEffect(() => {
     async function checkShare() {
@@ -190,7 +191,9 @@ export default function App() {
     await persistShoppingList(setLineStatus(shoppingList, [lineId], "pending"));
   }
 
-  const recipeList = Object.values(recipes).sort((a, b) => (a.name || "").localeCompare(b.name || "", "hu"));
+  const categorySuggestions = getAllCategories(recipes);
+  const allRecipeList = Object.values(recipes).sort((a, b) => (a.name || "").localeCompare(b.name || "", "hu"));
+  const recipeList = categoryFilter ? allRecipeList.filter((r) => (r.category || "") === categoryFilter) : allRecipeList;
   const transferLines = transferRange ? buildTransferPreview(mealPlan, recipes, transferRange.start, transferRange.end) : [];
   const transferLabel = transferRange
     ? transferRange.start === transferRange.end
@@ -236,7 +239,7 @@ export default function App() {
       {section === "library" && (
         <FadeIn keyProp="library">
           <div className="px-5">
-            {!loading && recipeList.length === 0 && (
+            {!loading && allRecipeList.length === 0 && (
               <EmptyState
                 icon={<BookOpen size={40} color={C.sage} />}
                 title="Még nincs recept felvéve"
@@ -244,7 +247,7 @@ export default function App() {
               />
             )}
 
-            {recipeList.length > 0 && (
+            {allRecipeList.length > 0 && (
               <button
                 onClick={() => downloadRecipesCsv(recipes)}
                 className="w-full rounded-xl py-2.5 kn-tap flex items-center justify-center gap-2 mb-3"
@@ -252,6 +255,47 @@ export default function App() {
               >
                 <Download size={15} /> Receptek mentése CSV-be
               </button>
+            )}
+
+            {categorySuggestions.length > 0 && (
+              <div className="flex gap-2 mb-3" style={{ overflowX: "auto" }}>
+                <button
+                  onClick={() => setCategoryFilter(null)}
+                  className="rounded-full px-3 py-1.5 kn-tap"
+                  style={{
+                    background: !categoryFilter ? C.sage : C.cardAlt,
+                    color: !categoryFilter ? "white" : C.inkSoft,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  Mind
+                </button>
+                {categorySuggestions.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategoryFilter(c)}
+                    className="rounded-full px-3 py-1.5 kn-tap"
+                    style={{
+                      background: categoryFilter === c ? C.sage : C.cardAlt,
+                      color: categoryFilter === c ? "white" : C.inkSoft,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {categoryFilter && recipeList.length === 0 && (
+              <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 12 }}>
+                Nincs recept ebben a kategóriában.
+              </div>
             )}
 
             <div className="flex flex-col gap-2">
@@ -263,8 +307,18 @@ export default function App() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: C.ink }}>
-                        {r.name}
+                      <div className="flex items-center gap-2">
+                        <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: C.ink }}>
+                          {r.name}
+                        </div>
+                        {r.category && (
+                          <span
+                            className="rounded-full px-2 py-0.5"
+                            style={{ background: C.sageBg, color: C.sage, fontSize: 10.5, fontWeight: 600, flexShrink: 0 }}
+                          >
+                            {r.category}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 mt-1" style={{ color: C.inkSoft, fontSize: 12 }}>
                         <Users size={12} style={{ flexShrink: 0 }} />
@@ -365,6 +419,7 @@ export default function App() {
       {importMode && (
         <ImportRecipeSheet
           mode={importMode}
+          categorySuggestions={categorySuggestions}
           onClose={() => setImportMode(null)}
           onExtracted={(draft) => {
             setImportMode(null);
@@ -382,6 +437,7 @@ export default function App() {
           mode={nativeShare.type === "image" ? "photo" : "paste"}
           initialText={nativeShare.type === "text" ? nativeShare.value : undefined}
           initialImage={nativeShare.type === "image" ? nativeShare : undefined}
+          categorySuggestions={categorySuggestions}
           onClose={() => setNativeShare(null)}
           onExtracted={(draft) => {
             setNativeShare(null);
@@ -395,14 +451,27 @@ export default function App() {
       )}
 
       {importedDraft && (
-        <RecipeForm recipe={importedDraft} onClose={() => setImportedDraft(null)} onSave={saveRecipe} />
+        <RecipeForm
+          recipe={importedDraft}
+          categorySuggestions={categorySuggestions}
+          onClose={() => setImportedDraft(null)}
+          onSave={saveRecipe}
+        />
       )}
 
-      {showForm && <RecipeForm recipe={emptyRecipe()} onClose={() => setShowForm(false)} onSave={saveRecipe} />}
+      {showForm && (
+        <RecipeForm
+          recipe={emptyRecipe()}
+          categorySuggestions={categorySuggestions}
+          onClose={() => setShowForm(false)}
+          onSave={saveRecipe}
+        />
+      )}
 
       {editingRecipe && (
         <RecipeForm
           recipe={editingRecipe}
+          categorySuggestions={categorySuggestions}
           onClose={() => setEditingRecipe(null)}
           onSave={saveRecipe}
           onDelete={() => {

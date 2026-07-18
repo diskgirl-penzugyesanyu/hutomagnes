@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
-import { C, Field, NumField, SelectField, TextAreaField } from "./shared.jsx";
+import { C, Field, NumField, SelectField, TextAreaField, CategoryField } from "./shared.jsx";
 import { UNITS, emptyIngredient, validateRecipe } from "./recipes.js";
 
-export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
+export default function RecipeForm({ recipe, onClose, onSave, onDelete, categorySuggestions }) {
   const isEdit = !!recipe.name;
   const [draft, setDraft] = useState(recipe);
   const [error, setError] = useState("");
@@ -101,6 +101,13 @@ export default function RecipeForm({ recipe, onClose, onSave, onDelete }) {
         )}
 
         <Field label="Recept neve" value={draft.name} onChange={(v) => setField("name", v)} placeholder="pl. Rakott karfiol" />
+        <CategoryField
+          label="Kategória"
+          value={draft.category || ""}
+          onChange={(v) => setField("category", v)}
+          suggestions={categorySuggestions || []}
+          placeholder="pl. Főétel, Leves, Desszert"
+        />
         <NumField label="Alap adagszám" value={draft.baseServings} onChange={(v) => setField("baseServings", v)} placeholder="4" />
         <div className="flex items-center gap-2 mb-3" style={{ marginTop: -6 }}>
           <span style={{ color: C.inkSoft, fontSize: 11.5 }}>Szorzás:</span>

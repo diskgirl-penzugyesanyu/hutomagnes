@@ -3,7 +3,7 @@ import { X, Loader2, ClipboardPaste, Camera, Images } from "lucide-react";
 import { C, TextAreaField } from "./shared.jsx";
 import { extractRecipeFromText, extractRecipeFromPhoto, extractRecipeFromSharedImage } from "./recipeImport.js";
 
-export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallbackManual, initialText, initialImage }) {
+export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallbackManual, initialText, initialImage, categorySuggestions }) {
   const [pasteText, setPasteText] = useState(initialText || "");
   const [stage, setStage] = useState(
     initialImage || initialText ? "loading" : mode === "photo" ? "pick" : "input"
@@ -18,7 +18,7 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
     setStage("loading");
     setError("");
     try {
-      const draft = await extractRecipeFromText(value);
+      const draft = await extractRecipeFromText(value, "text-import", categorySuggestions);
       onExtracted(draft);
     } catch (e) {
       setError(e.message || "Nem sikerült feldolgozni.");
@@ -30,7 +30,7 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
     setStage("loading");
     setError("");
     try {
-      const draft = await extractRecipeFromSharedImage(initialImage.value, initialImage.mimeType);
+      const draft = await extractRecipeFromSharedImage(initialImage.value, initialImage.mimeType, categorySuggestions);
       onExtracted(draft);
     } catch (err) {
       setError(err.message || "Nem sikerült feldolgozni a képet.");
@@ -44,7 +44,7 @@ export default function ImportRecipeSheet({ mode, onClose, onExtracted, onFallba
     setStage("loading");
     setError("");
     try {
-      const draft = await extractRecipeFromPhoto(file);
+      const draft = await extractRecipeFromPhoto(file, categorySuggestions);
       onExtracted(draft);
     } catch (err) {
       setError(err.message || "Nem sikerült feldolgozni a fotót.");

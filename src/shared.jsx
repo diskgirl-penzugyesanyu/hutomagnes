@@ -1,6 +1,8 @@
 // Közös design-tokenek és UI-atomok — a Kalórianapló app mintájára,
 // hogy a két testvérapp egységes vizuális nyelvet használjon.
 
+import { useState } from "react";
+
 export const C = {
   bg: "#1B1230",
   card: "rgba(255,255,255,0.06)",
@@ -80,6 +82,53 @@ export function SelectField({ label, value, onChange, options }) {
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// Szabad szöveges mező, ami a "suggestions" listából felkínálja a hozzá
+// hasonló, korábban már használt értékeket -- a felhasználó mindig maga írja
+// be/választja ki, semmi nem kerül automatikusan kitöltésre.
+export function CategoryField({ label, value, onChange, suggestions, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const filtered = (suggestions || []).filter((s) => {
+    const v = (value || "").trim().toLowerCase();
+    return s.toLowerCase() !== v && (!v || s.toLowerCase().includes(v));
+  });
+
+  return (
+    <div className="mb-3" style={{ position: "relative" }}>
+      <label style={{ color: C.inkSoft, fontSize: 12 }}>{label}</label>
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className="w-full rounded-xl px-3 py-2 mt-1"
+        style={{ border: `1px solid ${C.border}`, background: C.card, color: C.ink, fontSize: 15 }}
+      />
+      {open && filtered.length > 0 && (
+        <div
+          className="kn-card rounded-xl mt-1"
+          style={{ position: "absolute", left: 0, right: 0, zIndex: 20, maxHeight: 160, overflowY: "auto" }}
+        >
+          {filtered.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onMouseDown={() => {
+                onChange(s);
+                setOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 kn-tap"
+              style={{ color: C.ink, fontSize: 14 }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

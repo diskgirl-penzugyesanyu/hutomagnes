@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, X, Trash2, ShoppingCart, Search, Utensils } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, X, Trash2, ShoppingCart, Search, Utensils, ClipboardList } from "lucide-react";
 import { C, NumField, Field } from "./shared.jsx";
 import { dateStr, todayStr } from "./shared.jsx";
 import { openInKalorianaplo } from "./kalorianaploBridge.js";
+import { getAllCategories } from "./recipes.js";
+import FoodListSheet from "./FoodListSheet.jsx";
 import {
   HU_WEEKDAYS,
   monthLabel,
@@ -11,6 +13,7 @@ import {
   getEntriesCoveringDay,
   findOverlappingEntries,
   daysBetweenInclusive,
+  getDistinctRecipeNamesInRange,
   newEntryId,
 } from "./mealPlanCalendar.js";
 
@@ -27,6 +30,7 @@ export default function CalendarView({ recipes, mealPlan, onSaveEntry, onDeleteE
   const [rangeMode, setRangeMode] = useState(false);
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
+  const [foodListRange, setFoodListRange] = useState(null);
 
   const grid = useMemo(() => getMonthGrid(year, month), [year, month]);
 
@@ -131,7 +135,7 @@ export default function CalendarView({ recipes, mealPlan, onSaveEntry, onDeleteE
 
       {rangeMode && rangeStart && (
         <div
-          className="fixed left-0 right-0 flex justify-center z-40"
+          className="fixed left-0 right-0 flex flex-col items-center gap-2 z-40"
           style={{ bottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         >
           <button
@@ -144,6 +148,17 @@ export default function CalendarView({ recipes, mealPlan, onSaveEntry, onDeleteE
           >
             <ShoppingCart size={18} />
             Hozzáadás a bevásárlólistához ({daysBetweenInclusive(rangeStart, rangeEnd || rangeStart)} nap)
+          </button>
+          <button
+            onClick={() => {
+              setFoodListRange({ start: rangeStart, end: rangeEnd || rangeStart });
+              exitRangeMode();
+            }}
+            className="rounded-full px-5 py-3 kn-tap flex items-center gap-2"
+            style={{ background: C.sage, color: "white", fontWeight: 600, boxShadow: "0 8px 24px rgba(155,107,255,0.45)" }}
+          >
+            <ClipboardList size={18} />
+            Kaja lista ({daysBetweenInclusive(rangeStart, rangeEnd || rangeStart)} nap)
           </button>
         </div>
       )}
@@ -178,6 +193,15 @@ export default function CalendarView({ recipes, mealPlan, onSaveEntry, onDeleteE
             onSaveEntry(entry);
             setPickerOpen(false);
           }}
+        />
+      )}
+
+      {foodListRange && (
+        <FoodListSheet
+          names={getDistinctRecipeNamesInRange(mealPlan, recipes, foodListRange.start, foodListRange.end)}
+          rangeStart={foodListRange.start}
+          rangeEnd={foodListRange.end}
+          onClose={() => setFoodListRange(null)}
         />
       )}
     </div>
@@ -273,13 +297,17 @@ function DayDetailSheet({ ds, recipes, entries, onClose, onAddNew, onEditEntry, 
 
 function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClose, onSave }) {
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState(null);
   const [selectedRecipeId, setSelectedRecipeId] = useState(existingEntry ? existingEntry.recipeId : null);
   const recipe = selectedRecipeId ? recipes[selectedRecipeId] : null;
   const [servings, setServings] = useState(existingEntry ? existingEntry.servings : recipe ? recipe.baseServings : 2);
   const [duration, setDuration] = useState(existingEntry ? existingEntry.durationDays : 1);
 
+  const categorySuggestions = useMemo(() => getAllCategories(recipes), [recipes]);
+
   const list = Object.values(recipes)
     .filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
+    .filter((r) => !categoryFilter || (r.category || "") === categoryFilter)
     .sort((a, b) => a.name.localeCompare(b.name, "hu"));
 
   const overlapping = selectedRecipeId
@@ -334,8 +362,31 @@ function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClos
                 style={{ border: `1px solid ${C.border}`, background: C.card, color: C.ink, fontSize: 15 }}
               />
             </div>
+            {categorySuggestions.length > 0 && (
+              <div className="flex gap-2 mb-3" style={{ overflowX: "auto" }}>
+                <button
+                  onClick={() => setCategoryFilter(null)}
+                  className="rounded-full px-3 py-1.5 kn-tap text-xs font-semibold"
+                  style={{ background: !categoryFilter ? C.sage : C.cardAlt, color: !categoryFilter ? "white" : C.inkSoft, whiteSpace: "nowrap" }}
+                >
+                  Mind
+                </button>
+                {categorySuggestions.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className="rounded-full px-3 py-1.5 kn-tap text-xs font-semibold"
+                    style={{ background: categoryFilter === cat ? C.sage : C.cardAlt, color: categoryFilter === cat ? "white" : C.inkSoft, whiteSpace: "nowrap" }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
             {list.length === 0 && (
-              <div style={{ color: C.inkSoft, fontSize: 13 }}>Nincs ilyen nevű recept a könyvtárban.</div>
+              <div style={{ color: C.inkSoft, fontSize: 13 }}>
+                {categoryFilter ? "Nincs recept ebben a kategóriában." : "Nincs ilyen nevű recept a könyvtárban."}
+              </div>
             )}
             <div className="flex flex-col gap-2">
               {list.map((r) => (
@@ -346,7 +397,7 @@ function RecipePickerSheet({ recipes, mealPlan, startDate, existingEntry, onClos
                   style={{ color: C.ink, fontSize: 14, fontWeight: 600 }}
                 >
                   {r.name}
-                  <span style={{ color: C.inkSoft, fontWeight: 400, fontSize: 12 }}> · {r.baseServings} adag</span>
+                  <span style={{ color: C.inkSoft, fontWeight: 400, fontSize: 12 }}> · {r.baseServings} adag{r.category ? ` · ${r.category}` : ""}</span>
                 </button>
               ))}
             </div>

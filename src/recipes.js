@@ -54,6 +54,7 @@ export function emptyRecipe() {
   return {
     id: newId(),
     name: "",
+    category: "", // szabad szöveg, a felhasználó adja meg (AI javasolhat importnál)
     baseServings: 4,
     ingredients: [emptyIngredient()],
     instructions: "",
@@ -63,6 +64,16 @@ export function emptyRecipe() {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+// Az összes eddig használt, egyedi kategórianév -- javaslatokhoz és szűrőkhöz.
+export function getAllCategories(recipes) {
+  const set = new Set();
+  for (const r of Object.values(recipes)) {
+    const c = (r.category || "").trim();
+    if (c) set.add(c);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "hu"));
 }
 
 // A makrókat az adott naphoz megadott adagszámra skálázza (ua. arányban, mint a hozzávalókat).

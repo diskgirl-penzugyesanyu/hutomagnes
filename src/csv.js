@@ -13,11 +13,12 @@ function csvEscape(value) {
 }
 
 export function buildRecipesCsv(recipes) {
-  const header = ["Recept neve", "Adagszám", "Hozzávalók", "Elkészítés"];
+  const header = ["Recept neve", "Kategória", "Adagszám", "Hozzávalók", "Elkészítés"];
   const rows = Object.values(recipes)
     .sort((a, b) => (a.name || "").localeCompare(b.name || "", "hu"))
     .map((r) => [
       r.name,
+      r.category || "",
       r.baseServings,
       (r.ingredients || []).map(formatIngredientLine).join("; "),
       r.instructions,

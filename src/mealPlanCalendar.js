@@ -83,3 +83,16 @@ export function daysBetweenInclusive(dsStart, dsEnd) {
 export function newEntryId() {
   return Date.now() + "-" + Math.random().toString(36).slice(2, 7);
 }
+
+// A tartományba eső bejegyzések receptneveinek egyedi listája -- sorrend és dátum
+// nem számít, csak az, hogy milyen kaják vannak betervezve. ABC-sorrendben adja vissza.
+export function getDistinctRecipeNamesInRange(mealPlan, recipes, rangeStart, rangeEnd) {
+  const entries = getEntriesInRange(mealPlan, rangeStart, rangeEnd);
+  const set = new Set();
+  for (const entry of entries) {
+    const recipe = recipes[entry.recipeId];
+    const name = recipe ? recipe.name : null;
+    if (name && name.trim()) set.add(name.trim());
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "hu"));
+}
