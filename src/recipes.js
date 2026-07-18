@@ -25,6 +25,18 @@ export function unitLabel(value) {
   return u ? u.label : value;
 }
 
+// Súly- és térfogat-mértékegység "családok" -- ezen belül a mennyiségek
+// automatikusan átválthatók/összeadhatók (a bevásárlólistán). Minden más
+// egység (db, üveg, csipet, evőkanál, stb.) nem alakítható át másikba.
+export const WEIGHT_GRAMS = { g: 1, dkg: 10, kg: 1000 };
+export const VOLUME_ML = { ml: 1, dl: 100, l: 1000 };
+
+export function unitFamily(unit) {
+  if (WEIGHT_GRAMS[unit] != null) return "weight";
+  if (VOLUME_ML[unit] != null) return "volume";
+  return null;
+}
+
 export function trimAmount(n) {
   const r = Math.round((Number(n) || 0) * 100) / 100;
   return Number.isInteger(r) ? String(r) : String(r).replace(/0+$/, "").replace(/\.$/, "");

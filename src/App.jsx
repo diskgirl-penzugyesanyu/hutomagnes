@@ -11,7 +11,7 @@ import CalendarView from "./CalendarView.jsx";
 import ShoppingListView from "./ShoppingListView.jsx";
 import TransferReviewSheet from "./TransferReviewSheet.jsx";
 import { getEntriesInRange } from "./mealPlanCalendar.js";
-import { buildTransferPreview, mergeIntoShoppingList, addAdhocItem, setLineStatus } from "./shoppingList.js";
+import { buildTransferPreview, mergeIntoShoppingList, addAdhocItem, setLineStatus, formatLineForExport, mergeDuplicateLines } from "./shoppingList.js";
 import { consumePendingShare } from "./nativeShareReceiver.js";
 import { syncToOurGroceries } from "./ourGroceries.js";
 
@@ -175,7 +175,7 @@ export default function App() {
 
   async function sendPending(lineIds) {
     setSendError("");
-    const items = lineIds.map((id) => formatIngredientLine(shoppingList[id])).filter(Boolean);
+    const items = lineIds.flatMap((id) => formatLineForExport(shoppingList[id])).filter(Boolean);
     setSending(true);
     try {
       await syncToOurGroceries(items);
@@ -189,6 +189,10 @@ export default function App() {
 
   async function reopenLine(lineId) {
     await persistShoppingList(setLineStatus(shoppingList, [lineId], "pending"));
+  }
+
+  async function mergeDuplicates(lineIds, canonicalName) {
+    await persistShoppingList(mergeDuplicateLines(shoppingList, lineIds, canonicalName));
   }
 
   const categorySuggestions = getAllCategories(recipes);
@@ -379,6 +383,7 @@ export default function App() {
             onAddAdhoc={addAdhocLine}
             onSend={sendPending}
             onReopen={reopenLine}
+            onMergeDuplicates={mergeDuplicates}
           />
         </FadeIn>
       )}

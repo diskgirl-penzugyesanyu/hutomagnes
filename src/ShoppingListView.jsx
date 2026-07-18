@@ -1,12 +1,17 @@
 import React, { useState } from "react";
-import { Trash2, Plus, Send, RotateCcw, Loader2 } from "lucide-react";
+import { Trash2, Plus, Send, RotateCcw, Loader2, Wand2 } from "lucide-react";
 import { C, EmptyState, NumField, Field, SelectField } from "./shared.jsx";
 import { UNITS, unitLabel, emptyIngredient } from "./recipes.js";
-import { getSourceRecipeNames } from "./shoppingList.js";
+import { getSourceRecipeNames, formatLineAmount } from "./shoppingList.js";
+import { findPossibleDuplicateGroups } from "./duplicateFinder.js";
+import DuplicateReviewSheet from "./DuplicateReviewSheet.jsx";
 
-export default function ShoppingListView({ shoppingList, recipes, mealPlan, sending, sendError, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen }) {
+export default function ShoppingListView({ shoppingList, recipes, mealPlan, sending, sendError, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen, onMergeDuplicates }) {
   const [addingOpen, setAddingOpen] = useState(false);
   const [draft, setDraft] = useState(emptyIngredient());
+  const [duplicateGroups, setDuplicateGroups] = useState(null);
+  const [findingDuplicates, setFindingDuplicates] = useState(false);
+  const [duplicateError, setDuplicateError] = useState("");
 
   const all = Object.values(shoppingList);
   const pending = all.filter((l) => l.status === "pending").sort((a, b) => a.name.localeCompare(b.name, "hu"));
@@ -17,6 +22,32 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
     onAddAdhoc(draft);
     setDraft(emptyIngredient());
     setAddingOpen(false);
+  }
+
+  async function findDuplicates() {
+    setFindingDuplicates(true);
+    setDuplicateError("");
+    try {
+      const nameGroups = await findPossibleDuplicateGroups(pending.map((l) => l.name));
+      const resolved = nameGroups
+        .map((names) => ({ names, lineIds: pending.filter((l) => names.includes(l.name)).map((l) => l.id) }))
+        .filter((g) => g.lineIds.length >= 2);
+      setDuplicateGroups(resolved);
+    } catch (e) {
+      setDuplicateError(e.message || "Nem sikerült megvizsgálni a listát.");
+    } finally {
+      setFindingDuplicates(false);
+    }
+  }
+
+  function handleMergeGroup(idx, canonicalName) {
+    const group = duplicateGroups[idx];
+    onMergeDuplicates(group.lineIds, canonicalName);
+    setDuplicateGroups((groups) => groups.filter((_, i) => i !== idx));
+  }
+
+  function handleDismissGroup(idx) {
+    setDuplicateGroups((groups) => groups.filter((_, i) => i !== idx));
   }
 
   return (
@@ -38,6 +69,7 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
           <div className="flex flex-col gap-2 mb-3">
             {pending.map((line) => {
               const sourceNames = getSourceRecipeNames(line.sourceEntryIds, mealPlan, recipes);
+              const isMixed = !!(line.parts && line.parts.length);
               return (
               <div key={line.id} className="rounded-xl p-3 kn-card flex items-center gap-3">
                 <div className="flex-1 min-w-0">
@@ -46,16 +78,24 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
                     <div style={{ color: C.inkSoft, fontSize: 11, marginTop: 1 }}>{sourceNames.join(", ")}</div>
                   )}
                 </div>
-                <input
-                  type="number"
-                  value={line.amount}
-                  onChange={(e) => onUpdateAmount(line.id, e.target.value)}
-                  className="rounded-lg px-2 py-1.5 text-right"
-                  style={{ width: 60, border: `1px solid ${C.border}`, background: C.card, color: C.ink, fontSize: 13 }}
-                />
-                <span style={{ color: C.inkSoft, fontSize: 12, width: 36 }}>
-                  {line.unit === "db" || !line.unit ? "db" : unitLabel(line.unit)}
-                </span>
+                {isMixed ? (
+                  <span style={{ color: C.ink, fontSize: 12.5, textAlign: "right", maxWidth: 130 }}>
+                    {formatLineAmount(line)}
+                  </span>
+                ) : (
+                  <>
+                    <input
+                      type="number"
+                      value={line.amount}
+                      onChange={(e) => onUpdateAmount(line.id, e.target.value)}
+                      className="rounded-lg px-2 py-1.5 text-right"
+                      style={{ width: 60, border: `1px solid ${C.border}`, background: C.card, color: C.ink, fontSize: 13 }}
+                    />
+                    <span style={{ color: C.inkSoft, fontSize: 12, width: 36 }}>
+                      {line.unit === "db" || !line.unit ? "db" : unitLabel(line.unit)}
+                    </span>
+                  </>
+                )}
                 <button onClick={() => onDeleteLine(line.id)} className="kn-tap" style={{ color: C.coral }}>
                   <Trash2 size={16} />
                 </button>
@@ -63,6 +103,23 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
               );
             })}
           </div>
+
+          {pending.length > 1 && (
+            <button
+              onClick={findDuplicates}
+              disabled={findingDuplicates}
+              className="w-full rounded-xl py-2.5 kn-tap flex items-center justify-center gap-2 mb-3"
+              style={{ background: C.cardAlt, color: C.ink, fontWeight: 600 }}
+            >
+              {findingDuplicates ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+              {findingDuplicates ? "Vizsgálat..." : "Esetleg ugyanaz?"}
+            </button>
+          )}
+          {duplicateError && (
+            <div className="rounded-xl p-3 mb-3" style={{ background: C.coralBg, color: C.coral, fontSize: 13, lineHeight: 1.5 }}>
+              {duplicateError}
+            </div>
+          )}
         </>
       )}
 
@@ -123,7 +180,7 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
             {sent.map((line) => (
               <div key={line.id} className="rounded-xl p-3 flex items-center gap-3" style={{ opacity: 0.6 }}>
                 <div className="flex-1 min-w-0" style={{ color: C.ink, fontSize: 13 }}>
-                  {line.amount} {line.unit === "db" || !line.unit ? "" : unitLabel(line.unit)} {line.name}
+                  {formatLineAmount(line)} {line.name}
                 </div>
                 <button
                   onClick={() => onReopen(line.id)}
@@ -136,6 +193,16 @@ export default function ShoppingListView({ shoppingList, recipes, mealPlan, send
             ))}
           </div>
         </>
+      )}
+
+      {duplicateGroups !== null && (
+        <DuplicateReviewSheet
+          groups={duplicateGroups}
+          shoppingList={shoppingList}
+          onMerge={handleMergeGroup}
+          onDismiss={handleDismissGroup}
+          onClose={() => setDuplicateGroups(null)}
+        />
       )}
     </div>
   );
