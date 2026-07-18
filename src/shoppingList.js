@@ -85,6 +85,18 @@ export function addAdhocItem(shoppingList, { name, amount, unit }) {
   };
 }
 
+// Egy bevásárlólista-sorhoz tartozó naptári bejegyzések receptneveinek egyedi,
+// ABC-sorrendbe rendezett listája -- ebből épül a "melyik kajához kell" felirat.
+export function getSourceRecipeNames(sourceEntryIds, mealPlan, recipes) {
+  const set = new Set();
+  for (const entryId of sourceEntryIds || []) {
+    const entry = mealPlan[entryId];
+    const recipe = entry && recipes[entry.recipeId];
+    if (recipe && recipe.name) set.add(recipe.name);
+  }
+  return Array.from(set).sort((a, b) => a.localeCompare(b, "hu"));
+}
+
 export function setLineStatus(shoppingList, lineIds, status) {
   const next = { ...shoppingList };
   for (const id of lineIds) {

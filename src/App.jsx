@@ -370,6 +370,8 @@ export default function App() {
         <FadeIn keyProp="shopping">
           <ShoppingListView
             shoppingList={shoppingList}
+            recipes={recipes}
+            mealPlan={mealPlan}
             sending={sending}
             sendError={sendError}
             onUpdateAmount={updateLineAmount}

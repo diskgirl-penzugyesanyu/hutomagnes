@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { Trash2, Plus, Send, RotateCcw, Loader2 } from "lucide-react";
 import { C, EmptyState, NumField, Field, SelectField } from "./shared.jsx";
 import { UNITS, unitLabel, emptyIngredient } from "./recipes.js";
+import { getSourceRecipeNames } from "./shoppingList.js";
 
-export default function ShoppingListView({ shoppingList, sending, sendError, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen }) {
+export default function ShoppingListView({ shoppingList, recipes, mealPlan, sending, sendError, onUpdateAmount, onDeleteLine, onAddAdhoc, onSend, onReopen }) {
   const [addingOpen, setAddingOpen] = useState(false);
   const [draft, setDraft] = useState(emptyIngredient());
 
@@ -35,10 +36,15 @@ export default function ShoppingListView({ shoppingList, sending, sendError, onU
             <div style={{ color: C.inkSoft, fontSize: 13, marginBottom: 12 }}>Nincs bevásárlandó tétel.</div>
           )}
           <div className="flex flex-col gap-2 mb-3">
-            {pending.map((line) => (
+            {pending.map((line) => {
+              const sourceNames = getSourceRecipeNames(line.sourceEntryIds, mealPlan, recipes);
+              return (
               <div key={line.id} className="rounded-xl p-3 kn-card flex items-center gap-3">
-                <div className="flex-1 min-w-0" style={{ color: C.ink, fontSize: 14 }}>
-                  {line.name}
+                <div className="flex-1 min-w-0">
+                  <div style={{ color: C.ink, fontSize: 14 }}>{line.name}</div>
+                  {sourceNames.length > 0 && (
+                    <div style={{ color: C.inkSoft, fontSize: 11, marginTop: 1 }}>{sourceNames.join(", ")}</div>
+                  )}
                 </div>
                 <input
                   type="number"
@@ -54,7 +60,8 @@ export default function ShoppingListView({ shoppingList, sending, sendError, onU
                   <Trash2 size={16} />
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
